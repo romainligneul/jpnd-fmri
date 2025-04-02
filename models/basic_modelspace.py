@@ -81,7 +81,7 @@ class ModelWrapper:
         for prm in mappingParam:
             if isinstance(mappingParam[prm], list):
                 for param_ind in mappingParam[prm]:
-                    priorNLL-=prior_array[param_ind].log_pdf(parameters[param_ind])[0]
+                    priorNLL-=prior_array[param_ind].log_pdf(np.asarray(parameters[param_ind]))[0][0]
                     
         return priorNLL
     
@@ -100,6 +100,7 @@ class ModelWrapper:
             resets=[],
             returnMemory=False,
             prior_array=None,
+            extraParam={},
             default_values={}):
 
         if returnMemory:
@@ -149,16 +150,18 @@ class ModelWrapper:
             
             # prediction trial (choice + some learning)
             elif arrayType[step]==1 and arrayMissed[step]==0 and arrayPrediction[step]>=0:
-                                
-                # arbitrator for this trial
-                arbLogit = self.paramDict['slopeOmega'][split]*X[self.mappingX['Omega'][0]]
-                arbitrator= 1 / (1 + math.exp(-(self.paramDict['biasArbitrator'][split] + arbLogit)))
-                X[self.mappingX['arbitrator'][0]]=min(max(arbitrator, 10**-10), 1-(10**-10))      
+                
+                if 'forceArbitrator' in extraParam:
+                    X[self.mappingX['arbitrator'][0]]=extraParam['forceArbitrator']
+                else:
+                    # arbitrator for this trial
+                    arbLogit = self.paramDict['slopeOmega'][split]*X[self.mappingX['Omega'][0]]
+                    X[self.mappingX['arbitrator'][0]]= 1 / (1 + math.exp(-(self.paramDict['biasArbitrator'][split] + arbLogit)))
                 
                 probSAS=X[self.mappingX['SAS'][state,action,:]]
                 probSS=X[self.mappingX['SS'][state,:]]
                 
-                probMixed=probSAS*arbitrator+probSS*(1-arbitrator)
+                probMixed=probSAS*X[self.mappingX['arbitrator'][0]]+probSS*(1-X[self.mappingX['arbitrator'][0]])
                 logits =  (probMixed-np.max(probMixed))*self.paramDict['betaPred'][split]     
                                      
                 predProb = (1.0/self.nfutures) * self.paramDict['epsilon'][split] + (1 - self.paramDict['epsilon'][split])*softmax(logits)
@@ -228,7 +231,21 @@ def setup_models(bounds_list, plausible_bounds_list, prior_shapes, default_value
     model_list = []
 
     # Define models here
+    
     all_models=[
+        {
+            'included': True,
+            'agent': ModelWrapper,
+            'factors': ['SAS'],
+            'name': 'SASonly',
+            'parameter_preset': {'forceArbitrator': 1.0},
+            'parameter_mapping':{'alphaSAS':[0], 'betaPred': [1], 'slopeOmega': [],'biasArbitrator':[], 'epsilon': 0.001,
+                                'alphaSS':'alphaSAS','alphaOmega':'alphaSAS'},
+            'bounds_list':bounds_list,
+            'plausible_bounds_list': plausible_bounds_list,
+            'prior_shapes': prior_shapes,
+            'default_values': default_values,
+        },
         {
             'included': True,
             'agent': ModelWrapper,
@@ -262,19 +279,6 @@ def setup_models(bounds_list, plausible_bounds_list, prior_shapes, default_value
             'name': 'SASSS_Omega_splitBeta',
             'parameter_preset': {},
             'parameter_mapping':{'alphaSAS':[0], 'betaPred': [1,2], 'slopeOmega': [3],'biasArbitrator':[4], 'epsilon': 0.001, 
-                                'alphaSS':'alphaSAS','alphaOmega':'alphaSAS'},
-            'bounds_list':bounds_list,
-            'plausible_bounds_list': plausible_bounds_list,
-            'prior_shapes': prior_shapes,
-            'default_values': default_values,
-        },
-        {
-            'included': True,
-            'agent': ModelWrapper,
-            'factors': ['SAS'],
-            'name': 'SASonly',
-            'parameter_preset': {'forceArbitrator': 1.0},
-            'parameter_mapping':{'alphaSAS':[0], 'betaPred': [1], 'epsilon': 0.001,
                                 'alphaSS':'alphaSAS','alphaOmega':'alphaSAS'},
             'bounds_list':bounds_list,
             'plausible_bounds_list': plausible_bounds_list,

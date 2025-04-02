@@ -88,4 +88,4 @@ dependencies:
       - tomli==2.2.1
       - tqdm==4.67.1
       - tzdata==2025.2
-prefix: H:\Datasets\JPND_fMRI\jpndfmri-env
+prefix: ./jpndfmri-env
