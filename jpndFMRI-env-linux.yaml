@@ -84,9 +84,11 @@ dependencies:
       - pytest-rerunfailures==15.0
       - pytz==2025.2
       - pyvbmc==1.0.4
+      - scikit-learn==1.6.1
       - scipy==1.15.2
       - seaborn==0.13.2
       - submitit==1.5.2
+      - threadpoolctl==3.6.0
       - tomli==2.2.1
       - tqdm==4.67.1
       - tzdata==2025.2
