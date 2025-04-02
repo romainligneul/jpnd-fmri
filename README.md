@@ -14,7 +14,6 @@ An "_augmented" dataset will be created with in the "compiled_data" subfolder.
 
 You may use it to get model-based fMRI regressors for ex.
 
-
 ## Setup the environment
 
 In your terminal, type:
